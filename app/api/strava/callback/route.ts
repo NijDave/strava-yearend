@@ -5,6 +5,8 @@ import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { StravaTokenResponse } from "@/types";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const session = await auth();

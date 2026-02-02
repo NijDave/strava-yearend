@@ -14,6 +14,8 @@ import {
   generateFunFacts,
 } from "@/lib/statistics";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const session = await auth();
