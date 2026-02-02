@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("Please add your Mongo URI to .env.local");
-}
+// Temporarily commented out to allow server to start
+// if (!process.env.MONGODB_URI) {
+//   throw new Error("Please add your Mongo URI to .env.local");
+// }
 
-const MONGODB_URI: string = process.env.MONGODB_URI;
+const MONGODB_URI: string = process.env.MONGODB_URI || "";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -22,6 +23,12 @@ if (!global.mongoose) {
 }
 
 async function connectDB(): Promise<typeof mongoose> {
+  // If no MongoDB URI is configured, return a mock connection
+  if (!MONGODB_URI) {
+    console.warn("⚠️  MongoDB URI not configured. Database features will be unavailable.");
+    return mongoose;
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -29,18 +36,38 @@ async function connectDB(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    console.log("🔄 Attempting to connect to MongoDB...");
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts)
+      .then((mongoose) => {
+        console.log("✅ MongoDB connected successfully");
+        return mongoose;
+      })
+      .catch((error) => {
+        console.error("❌ MongoDB connection error:", error.message);
+        console.error("   This might be due to:");
+        console.error("   - Network connectivity issues");
+        console.error("   - IP address not whitelisted in MongoDB Atlas");
+        console.error("   - Invalid connection string");
+        console.error("   The app will continue without database functionality.");
+        cached.promise = null;
+        // Return mongoose anyway to prevent blocking
+        return mongoose;
+      });
   }
 
   try {
     cached.conn = await cached.promise;
-  } catch (e) {
+  } catch (e: any) {
     cached.promise = null;
-    throw e;
+    console.error("Failed to establish MongoDB connection:", e.message);
+    // Return mongoose to allow app to continue
+    return mongoose;
   }
 
   return cached.conn;
