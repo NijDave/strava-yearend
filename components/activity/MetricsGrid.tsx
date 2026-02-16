@@ -129,6 +129,10 @@ export function MetricsGrid({ activity, streams }: MetricsGridProps) {
     const isSwim = activity.type === "Swim";
     const usesSpeed = ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type);
 
+    // Activities that don't use pace or speed (court sports, gym activities, etc.)
+    const noPaceActivities = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
+    const showsPaceOrSpeed = !noPaceActivities.includes(activity.type);
+
     const avgHR = getAverageHeartRate();
     const maxHR = getMaxHeartRate();
     const avgCadence = getAverageCadence();
@@ -196,8 +200,8 @@ export function MetricsGrid({ activity, streams }: MetricsGridProps) {
                     />
                 )}
 
-                {/* Activity-specific pace/speed metric */}
-                {usesPace && (
+                {/* Activity-specific pace/speed metric - only for activities where it makes sense */}
+                {showsPaceOrSpeed && usesPace && (
                     <MetricCard
                         icon="⚡"
                         label="Average Pace"
@@ -207,7 +211,7 @@ export function MetricsGrid({ activity, streams }: MetricsGridProps) {
                     />
                 )}
 
-                {isSwim && (
+                {showsPaceOrSpeed && isSwim && (
                     <MetricCard
                         icon="🏊"
                         label="Average Pace"
@@ -217,7 +221,7 @@ export function MetricsGrid({ activity, streams }: MetricsGridProps) {
                     />
                 )}
 
-                {usesSpeed && (
+                {showsPaceOrSpeed && usesSpeed && (
                     <MetricCard
                         icon="🚴"
                         label="Average Speed"

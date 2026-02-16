@@ -1,0 +1,31 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+Error: Cannot find module './webpack/plugins/nextjs-require-cache-hot-reloader'
+Require stack:
+- /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/build/webpack-config.js
+- /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/router-server.js
+- /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/start-server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/require-hook.js:55:36
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at mod.require (/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:182:18)
+    at /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/build/webpack-config.js:1464:59
+    at getBaseWebpackConfig (/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/build/webpack-config.js:1474:15)
+    at /Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/dev/hot-reloader-webpack.js:530:48
+    at async Span.traceAsyncFn (/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/trace/trace.js:154:20) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/build/webpack-config.js',
+    '/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/dev/hot-reloader-webpack.js',
+    '/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js',
+    '/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/router-server.js',
+    '/Users/nijdave/Documents/Strava_yearend/node_modules/next/dist/server/lib/start-server.js'
+  ]
+}

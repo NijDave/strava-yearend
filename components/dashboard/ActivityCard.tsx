@@ -84,33 +84,52 @@ export function ActivityCard({ activity, index = 0 }: ActivityCardProps) {
                 {Math.round(activity.totalElevationGain)}m
               </p>
             </div>
-          ) : (
-            <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                {["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type) ? "Speed" : "Pace"}
-              </p>
-              <p className="text-lg font-bold text-gray-900">
-                {activity.movingTime > 0 && activity.distance > 0
-                  ? ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type)
-                    ? `${((activity.distance / activity.movingTime) * 3.6).toFixed(1)} km/h`
-                    : activity.type === "Swim"
-                      ? (() => {
-                        const secondsPer100m = (activity.movingTime / activity.distance) * 100;
-                        const mins = Math.floor(secondsPer100m / 60);
-                        const secs = Math.floor(secondsPer100m % 60);
-                        return `${mins}:${secs.toString().padStart(2, '0')} /100m`;
-                      })()
-                      : (() => {
-                        const secondsPerKm = (activity.movingTime / activity.distance) * 1000;
-                        const mins = Math.floor(secondsPerKm / 60);
-                        const secs = Math.floor(secondsPerKm % 60);
-                        return `${mins}:${secs.toString().padStart(2, '0')} /km`;
-                      })()
-                  : "N/A"
-                }
-              </p>
-            </div>
-          )}
+          ) : (() => {
+            // Activities that don't use pace or speed (court sports, gym activities, etc.)
+            const noPaceActivities = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
+            const showsPaceOrSpeed = !noPaceActivities.includes(activity.type);
+
+            if (!showsPaceOrSpeed) {
+              // For activities without pace/speed, show calories or just empty
+              return (
+                <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Activity</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {activity.type}
+                  </p>
+                </div>
+              );
+            }
+
+            // For activities with pace/speed
+            return (
+              <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  {["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type) ? "Speed" : "Pace"}
+                </p>
+                <p className="text-lg font-bold text-gray-900">
+                  {activity.movingTime > 0 && activity.distance > 0
+                    ? ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type)
+                      ? `${((activity.distance / activity.movingTime) * 3.6).toFixed(1)} km/h`
+                      : activity.type === "Swim"
+                        ? (() => {
+                          const secondsPer100m = (activity.movingTime / activity.distance) * 100;
+                          const mins = Math.floor(secondsPer100m / 60);
+                          const secs = Math.floor(secondsPer100m % 60);
+                          return `${mins}:${secs.toString().padStart(2, '0')} /100m`;
+                        })()
+                        : (() => {
+                          const secondsPerKm = (activity.movingTime / activity.distance) * 1000;
+                          const mins = Math.floor(secondsPerKm / 60);
+                          const secs = Math.floor(secondsPerKm % 60);
+                          return `${mins}:${secs.toString().padStart(2, '0')} /km`;
+                        })()
+                    : "N/A"
+                  }
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Footer */}

@@ -3,16 +3,21 @@
 echo "🔍 Checking MongoDB Atlas cluster status..."
 echo ""
 
-# Quick connection test with timeout
-timeout 10 node test-mongodb-connection.js 2>&1
+# Quick connection test (macOS compatible)
+node test-mongodb-connection.js 2>&1 &
+TEST_PID=$!
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ MongoDB is ready!"
-    echo "🚀 Starting development server..."
-    echo ""
-    npm run dev
-elif [ $? -eq 124 ]; then
+# Wait up to 10 seconds for the test
+COUNTER=0
+while kill -0 $TEST_PID 2>/dev/null && [ $COUNTER -lt 10 ]; do
+    sleep 1
+    COUNTER=$((COUNTER + 1))
+done
+
+# Kill the test if it's still running
+if kill -0 $TEST_PID 2>/dev/null; then
+    kill $TEST_PID 2>/dev/null
+    wait $TEST_PID 2>/dev/null
     echo ""
     echo "⚠️  MongoDB connection timed out (cluster might be paused)"
     echo ""
@@ -24,11 +29,10 @@ elif [ $? -eq 124 ]; then
     echo ""
     echo "Or press Enter to start the dev server anyway (it will wait for MongoDB)..."
     read
-    npm run dev
-else
-    echo ""
-    echo "❌ MongoDB connection failed"
-    echo "Starting dev server anyway..."
-    echo ""
-    npm run dev
 fi
+
+echo ""
+echo "🚀 Starting development server..."
+echo ""
+npm run dev
+

@@ -7,6 +7,7 @@ import connectDB from "./db";
 import User from "@/models/User";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Required for Vercel deployment - trusts the host header from proxy
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -65,7 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           await connectDB();
           const existingUser = await User.findOne({ email: user.email });
-          
+
           if (!existingUser && user.email) {
             await User.create({
               email: user.email,
