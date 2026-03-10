@@ -173,13 +173,19 @@ export function ActivityList({ userId }: ActivityListProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+
+          <a href="/chat"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
+          >
+            🤖 AI Coach
+          </a>
           {/* View Mode Toggle */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode("summary")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "summary"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
                 }`}
             >
               📊 Summary
@@ -187,8 +193,8 @@ export function ActivityList({ userId }: ActivityListProps) {
             <button
               onClick={() => setViewMode("compare")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "compare"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
                 }`}
             >
               📈 Compare
@@ -196,8 +202,8 @@ export function ActivityList({ userId }: ActivityListProps) {
             <button
               onClick={() => setViewMode("list")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "list"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
                 }`}
             >
               📋 List
@@ -238,8 +244,8 @@ export function ActivityList({ userId }: ActivityListProps) {
                 key={stat.year}
                 onClick={() => setSelectedYear(stat.year)}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedYear === stat.year
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
                 {stat.year} ({stat.activityCount})
