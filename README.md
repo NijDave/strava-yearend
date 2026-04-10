@@ -6,19 +6,26 @@ A full-stack Next.js application that connects to your Strava account and displa
 
 - 🔐 **Multiple Authentication Methods**
   - Email/Password registration and login
-  - Google OAuth
-  - Apple OAuth
+  - Google & Apple OAuth
+  - Deep Strava OAuth2 integration
 
-- 🚴 **Strava Integration**
-  - Connect your Strava account via OAuth
-  - Automatic activity synchronization
-  - Real-time updates via webhooks
+- ⚡ **Cyberpunk Analytics Dashboard**
+  - High-performance, neon-drenched dark mode UI
+  - Interactive mathematical crosshair charts and donut graphs
+  - Extensive yearly performance breakdowns & trend analysis
 
-- 📊 **Activity Management**
-  - View all activities organized by year
-  - Year-wise statistics (total distance, time, activity count)
-  - Beautiful activity cards with details
-  - Mobile-responsive design
+- 🤖 **Athlytic AI Suite (Powered by Llama 3.3)**
+  - **Coach AI:** Persistent chatting system aware of your entire Strava database.
+  - **Fun Facts:** Quirky, AI-generated interpolated stats about your years.
+  - **Roast Mode:** Brutal athletic teardowns evaluating your weakest metrics.
+
+- 📸 **Social Share Canvas Generator**
+  - Generate customized, high-resolution cyberpunk overlays mapped with your actual GPS route data.
+  - Auto-copy to standard clipboard or save to your local mobile device.
+
+- 🌍 **Deep Activity Management**
+  - OpenStreetMap Nominatim integrations to find localized city training data.
+  - Efficiently bulk-sync 1,000+ activities securely over rate-limited endpoints.
 
 ## Getting Started
 
@@ -150,11 +157,14 @@ strava-yearend/
 ## Technologies Used
 
 - **Next.js 14** - React framework with App Router
-- **TypeScript** - Type safety
-- **NextAuth.js** - Authentication
-- **MongoDB + Mongoose** - Database
-- **Tailwind CSS** - Styling
-- **Strava API** - Activity data
+- **TypeScript** - Strict Type safety
+- **NextAuth.js v5** - robust OAuth session handling
+- **MongoDB + Mongoose** - Database structure & Aggregation pipelines
+- **Tailwind CSS** - Extremely customized Cyberpunk utility system
+- **Strava API v3** - Activity datastore
+- **Groq AI (Llama 3.3 70B)** - Ultra-fast inference for AI Coach & Roast
+- **Canvas2D API** - Graphic generation for social overlays
+- **@mapbox/polyline** - Geo-decoding Strava route strings
 
 ## License
 
