@@ -7,13 +7,26 @@ interface Message {
   content: string;
 }
 
+const SUGGESTED_PROMPTS = [
+  "What's my longest ever run?",
+  "Build me a 10K training plan",
+  "Compare my best months",
+  "When do I train most?",
+  "What activity am I best at?",
+];
+
 function formatInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**"))
-      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-bold text-neon-orange">{part.slice(2, -2)}</strong>;
     if (part.startsWith("`") && part.endsWith("`"))
-      return <code key={i} className="bg-blue-50 text-blue-700 px-1 rounded text-xs">{part.slice(1, -1)}</code>;
+      return (
+        <code key={i} className="font-mono text-xs px-1.5 py-0.5"
+          style={{ background: "rgba(255,85,0,0.15)", border: "1px solid rgba(255,85,0,0.3)", color: "#FF5500" }}>
+          {part.slice(1, -1)}
+        </code>
+      );
     return <span key={i}>{part}</span>;
   });
 }
@@ -26,8 +39,10 @@ function FormatMessage({ text }: { text: string }) {
 
   const flushList = (key: string) => {
     if (listItems.length === 0) return;
-    if (listType === "ul") elements.push(<ul key={key} className="ml-4 space-y-1 my-2">{listItems}</ul>);
-    else elements.push(<ol key={key} className="ml-4 space-y-1 my-2 list-decimal">{listItems}</ol>);
+    if (listType === "ul")
+      elements.push(<ul key={key} className="ml-4 space-y-1 my-2 list-none">{listItems}</ul>);
+    else
+      elements.push(<ol key={key} className="ml-4 space-y-1 my-2 list-decimal">{listItems}</ol>);
     listItems = [];
     listType = null;
   };
@@ -35,22 +50,27 @@ function FormatMessage({ text }: { text: string }) {
   lines.forEach((line, i) => {
     if (line.startsWith("### ")) {
       flushList(`fl${i}`);
-      elements.push(<h3 key={i} className="text-sm font-bold mt-3 mb-1 text-gray-800">{line.slice(4)}</h3>);
+      elements.push(<h3 key={i} className="font-bebas text-lg text-neon-orange mt-3 mb-1 tracking-wider">{line.slice(4)}</h3>);
     } else if (line.startsWith("## ")) {
       flushList(`fl${i}`);
-      elements.push(<h2 key={i} className="text-base font-bold mt-3 mb-1 text-gray-800">{line.slice(3)}</h2>);
+      elements.push(<h2 key={i} className="font-bebas text-xl text-neon-orange mt-3 mb-1 tracking-wider">{line.slice(3)}</h2>);
     } else if (line.startsWith("* ") || line.startsWith("- ")) {
       if (listType !== "ul") { flushList(`fl${i}`); listType = "ul"; }
-      listItems.push(<li key={i} className="text-sm leading-relaxed list-disc ml-4">{formatInline(line.slice(2))}</li>);
+      listItems.push(
+        <li key={i} className="text-sm leading-relaxed text-white/80 flex gap-2">
+          <span className="text-neon-orange mt-0.5 flex-shrink-0">▸</span>
+          <span>{formatInline(line.slice(2))}</span>
+        </li>
+      );
     } else if (/^\d+\.\s/.test(line)) {
       if (listType !== "ol") { flushList(`fl${i}`); listType = "ol"; }
-      listItems.push(<li key={i} className="text-sm leading-relaxed">{formatInline(line.replace(/^\d+\.\s/, ""))}</li>);
+      listItems.push(<li key={i} className="text-sm leading-relaxed text-white/80">{formatInline(line.replace(/^\d+\.\s/, ""))}</li>);
     } else if (line.trim() === "") {
       flushList(`fl${i}`);
       elements.push(<div key={i} className="h-1" />);
     } else {
       flushList(`fl${i}`);
-      elements.push(<p key={i} className="text-sm leading-relaxed">{formatInline(line)}</p>);
+      elements.push(<p key={i} className="text-sm leading-relaxed text-white/80">{formatInline(line)}</p>);
     }
   });
   flushList("final");
@@ -75,32 +95,35 @@ export default function ChatPage() {
       if (data.history && data.history.length > 0) {
         setMessages(data.history.map((h: any) => ({ role: h.role, content: h.content })));
       } else {
-        setMessages([{ role: "assistant", content: "Hey! I'm your **Athlytic AI Coach** 💪\n\nI have access to your complete Strava history. Ask me anything:\n* Training plans & improvements\n* Your best runs, rides & stats\n* Year-by-year comparisons\n* General sports & fitness questions" }]);
+        setMessages([{
+          role: "assistant",
+          content: "COACH SYSTEM ONLINE ⚡\n\nI have full access to your Strava training database. Fire away:\n* Training plans & periodization\n* Your best runs, rides & stats\n* Year-by-year performance trends\n* Pace targets & race predictions\n* General sports science questions",
+        }]);
       }
     } catch {
-      setMessages([{ role: "assistant", content: "Hey! I'm your Athlytic AI Coach 💪 Ask me anything about your training!" }]);
+      setMessages([{ role: "assistant", content: "COACH SYSTEM ONLINE ⚡ Ask me anything about your training!" }]);
     } finally {
       setLoadingHistory(false);
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMessage = input.trim();
+  const sendMessage = async (msgOverride?: string) => {
+    const text = msgOverride || input.trim();
+    if (!text || loading) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setMessages(prev => [...prev, { role: "user", content: text }]);
     setLoading(true);
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ message: text }),
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply ?? "Sorry, something went wrong." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply ?? "Sorry, something went wrong." }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Error connecting to AI. Make sure Ollama is running!" }]);
+      setMessages(prev => [...prev, { role: "assistant", content: "Error connecting to AI. Make sure Ollama is running!" }]);
     } finally {
       setLoading(false);
     }
@@ -116,94 +139,177 @@ export default function ChatPage() {
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
   };
 
+  const isEmpty = messages.length <= 1; // Only the initial greeting
+
   return (
-    <div className="flex flex-col h-screen" style={{ background: "linear-gradient(135deg, #eff6ff, #f5f3ff, #fdf2f8)" }}>
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-white/30 backdrop-blur-lg sticky top-0 z-10" style={{ background: "rgba(255,255,255,0.8)" }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-xl" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
-          🤖
-        </div>
+    <div className="flex flex-col h-screen bg-cyber-black">
+      {/* Scanline overlay */}
+      <div className="scanlines pointer-events-none fixed inset-0 z-0 opacity-30" />
+
+      {/* ── HEADER ── */}
+      <div className="relative z-10 flex items-center gap-4 px-4 sm:px-6 py-4"
+        style={{
+          background: "rgba(0,0,0,0.9)",
+          borderBottom: "1px solid rgba(255,85,0,0.3)",
+          borderLeft: "4px solid #FF5500",
+        }}>
         <div>
-          <h1 className="font-bold text-lg text-gray-800">Athlytic AI Coach</h1>
-          <p className="text-xs text-gray-500">Powered by Gemma3 · Your personal coach</p>
+          <div className="hud-label text-neon-orange/60 mb-0.5">// AI TRAINING SYSTEM</div>
+          <div className="font-bebas text-3xl sm:text-4xl text-white tracking-widest">
+            🤖 <span className="text-neon-orange">COACH</span>
+          </div>
         </div>
-        <div className="ml-auto">
-          <a href="/dashboard" className="text-sm font-medium px-4 py-2 rounded-lg text-white shadow transition hover:opacity-90" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}>
-            ← Dashboard
+        <div className="ml-auto flex items-center gap-3">
+          {/* Live indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 font-mono text-[10px] text-green-400/80 uppercase tracking-widest">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: "pulseRing 2s ease-out infinite" }} />
+            ONLINE
+          </div>
+          <a href="/dashboard"
+            className="font-mono text-xs text-white/60 hover:text-neon-orange transition-colors px-4 py-2 border border-white/20 hover:border-neon-orange/50">
+            ← DASHBOARD
           </a>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      {/* ── MESSAGE AREA ── */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 relative z-10">
         <div className="max-w-3xl mx-auto w-full space-y-4">
+
           {loadingHistory ? (
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 border-2 border-neon-orange/30 rounded-full" />
+                <div className="absolute inset-0 border-2 border-t-neon-orange rounded-full animate-spin" />
+              </div>
+              <div className="font-mono text-xs text-white/40 uppercase tracking-widest">LOADING MISSION HISTORY...</div>
             </div>
           ) : (
             messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-1 shadow-md" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "white" }}>
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1 text-lg"
+                    style={{ border: "1px solid rgba(255,85,0,0.4)", background: "rgba(255,85,0,0.1)" }}>
                     🤖
                   </div>
                 )}
+
+                {/* Bubble */}
                 <div
-                  className={`max-w-[78%] rounded-2xl px-4 py-3 shadow-sm ${msg.role === "user" ? "text-white rounded-br-none" : "text-gray-800 rounded-bl-none"}`}
+                  className="max-w-[85%] sm:max-w-[78%] px-4 py-3"
                   style={msg.role === "user"
-                    ? { background: "linear-gradient(135deg, #2563eb, #7c3aed)" }
-                    : { background: "rgba(255,255,255,0.95)", border: "1px solid rgba(99,102,241,0.1)" }}
+                    ? {
+                        background: "#FF5500",
+                        color: "#000",
+                        fontFamily: "'Space Mono', monospace",
+                        fontSize: "0.875rem",
+                        fontWeight: "600",
+                      }
+                    : {
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,85,0,0.25)",
+                        boxShadow: "0 0 20px rgba(255,85,0,0.04)",
+                      }
+                  }
                 >
                   {msg.role === "assistant"
                     ? <FormatMessage text={msg.content} />
-                    : <p className="text-sm">{msg.content}</p>}
+                    : <span className="text-sm">{msg.content}</span>}
                 </div>
+
                 {msg.role === "user" && (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-1 shadow-md bg-gray-200 text-gray-600">
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1 text-lg"
+                    style={{ border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)" }}>
                     👤
                   </div>
                 )}
               </div>
             ))
           )}
+
+          {/* Thinking dots */}
           {loading && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 shadow-md" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "white" }}>🤖</div>
-              <div className="rounded-2xl rounded-bl-none px-4 py-3 shadow-sm" style={{ background: "rgba(255,255,255,0.95)", border: "1px solid rgba(99,102,241,0.1)" }}>
-                <div className="flex gap-1 items-center h-5">
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#2563eb", animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#7c3aed", animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#2563eb", animationDelay: "300ms" }} />
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 text-lg"
+                style={{ border: "1px solid rgba(255,85,0,0.4)", background: "rgba(255,85,0,0.1)" }}>🤖</div>
+              <div className="px-5 py-4"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,85,0,0.25)" }}>
+                <div className="flex gap-2 items-center">
+                  {[0, 150, 300].map((delay, i) => (
+                    <div key={i} className="w-2.5 h-2.5 rounded-full"
+                      style={{ background: "#FF5500", boxShadow: "0 0 8px rgba(255,85,0,0.8)", animation: `bounce 0.8s ease-in-out infinite`, animationDelay: `${delay}ms` }} />
+                  ))}
+                  <span className="font-mono text-xs text-white/40 ml-2 uppercase tracking-widest">ANALYZING...</span>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Suggested prompts — shown only when conversation is fresh */}
+          {isEmpty && !loading && !loadingHistory && (
+            <div className="pt-4">
+              <div className="hud-label mb-3">// SUGGESTED QUERIES</div>
+              <div className="flex flex-wrap gap-2">
+                {SUGGESTED_PROMPTS.map((prompt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(prompt)}
+                    className="font-mono text-xs px-3 py-2 text-neon-orange/80 hover:text-white transition-all"
+                    style={{
+                      border: "1px solid rgba(255,85,0,0.35)",
+                      background: "rgba(255,85,0,0.06)",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#FF5500"; (e.currentTarget as HTMLElement).style.background = "rgba(255,85,0,0.15)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,85,0,0.35)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,85,0,0.06)"; }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div ref={bottomRef} />
         </div>
       </div>
 
-      <div className="px-4 py-4 border-t border-white/30 backdrop-blur-lg" style={{ background: "rgba(255,255,255,0.8)" }}>
+      {/* ── INPUT BAR ── */}
+      <div className="relative z-10 px-4 py-4"
+        style={{ background: "rgba(0,0,0,0.95)", borderTop: "1px solid rgba(255,85,0,0.25)" }}>
         <div className="flex gap-3 items-end max-w-3xl mx-auto">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={handleInput}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your training, longest ride, training plans..."
-            rows={1}
-            className="flex-1 rounded-xl px-4 py-3 text-sm resize-none outline-none text-gray-800 placeholder-gray-400 shadow-sm"
-            style={{ background: "rgba(255,255,255,0.95)", border: "1px solid rgba(99,102,241,0.25)", maxHeight: "120px" }}
-          />
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInput}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your training, longest ride, pace targets..."
+              rows={1}
+              id="coach-input"
+              className="w-full bg-transparent font-mono text-sm text-white placeholder-white/30 resize-none outline-none py-3 px-4"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,85,0,0.3)",
+                maxHeight: "120px",
+                transition: "border-color 0.2s",
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = "#FF5500"; }}
+              onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,85,0,0.3)"; }}
+            />
+          </div>
           <button
-            onClick={sendMessage}
+            id="coach-send-btn"
+            onClick={() => sendMessage()}
             disabled={loading || !input.trim()}
-            className="text-white rounded-xl px-5 py-3 text-sm font-semibold transition disabled:opacity-40 shadow-lg hover:opacity-90 flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}
+            className="font-bebas text-lg px-6 py-3 text-black tracking-widest flex-shrink-0 transition-all disabled:opacity-40"
+            style={{ background: "#FF5500", boxShadow: loading ? "none" : "0 0 20px rgba(255,85,0,0.4)" }}
           >
-            Send
+            SEND ⚡
           </button>
         </div>
-        <p className="text-center text-xs text-gray-400 mt-2">
-          Enter to send · Shift+Enter for new line · Conversation saved automatically
+        <p className="text-center font-mono text-[10px] text-white/25 mt-2 uppercase tracking-widest">
+          Enter to send · Shift+Enter for new line · Saved automatically
         </p>
       </div>
     </div>

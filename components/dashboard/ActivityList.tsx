@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { ActivityCard } from "./ActivityCard";
 import { YearEndSummary } from "./YearEndSummary";
-import { YearComparison } from "./YearComparison";
+import { ShareBottomSheet } from "@/components/ShareActivity";
+import { useShareSheet } from "@/hooks/useShareSheet";
+
 import { formatDistance, formatDuration } from "@/lib/utils";
 import { ActivityData } from "@/types";
 
@@ -23,10 +25,12 @@ export function ActivityList({ userId }: ActivityListProps) {
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [yearStats, setYearStats] = useState<YearStats[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "summary" | "compare">("summary");
+  const [viewMode, setViewMode] = useState<"list" | "summary">("summary");
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { isOpen, activeActivity, openShareSheet, closeShareSheet } = useShareSheet();
 
   useEffect(() => {
     fetchActivities();
@@ -36,9 +40,7 @@ export function ActivityList({ userId }: ActivityListProps) {
     try {
       setIsLoading(true);
       const response = await fetch("/api/strava/activities");
-      if (!response.ok) {
-        throw new Error("Failed to fetch activities");
-      }
+      if (!response.ok) throw new Error("Failed to fetch activities");
       const data = await response.json();
       setActivities(data.activities || []);
       processActivities(data.activities || []);
@@ -51,16 +53,9 @@ export function ActivityList({ userId }: ActivityListProps) {
 
   const processActivities = (activitiesList: ActivityData[]) => {
     const groupedByYear: Record<number, ActivityData[]> = {};
-
     activitiesList.forEach((activity) => {
-      const startDate =
-        typeof activity.startDate === "string"
-          ? new Date(activity.startDate)
-          : activity.startDate;
-      const year = new Date(startDate).getFullYear();
-      if (!groupedByYear[year]) {
-        groupedByYear[year] = [];
-      }
+      const year = new Date(activity.startDate).getFullYear();
+      if (!groupedByYear[year]) groupedByYear[year] = [];
       groupedByYear[year].push(activity);
     });
 
@@ -68,30 +63,13 @@ export function ActivityList({ userId }: ActivityListProps) {
       .map((yearStr) => {
         const year = parseInt(yearStr);
         const yearActivities = groupedByYear[year];
-        const totalDistance = yearActivities.reduce(
-          (sum, a) => sum + a.distance,
-          0
-        );
-        const totalTime = yearActivities.reduce(
-          (sum, a) => sum + a.movingTime,
-          0
-        );
-
         return {
           year,
-          activities: yearActivities.sort((a, b) => {
-            const dateA =
-              typeof a.startDate === "string"
-                ? new Date(a.startDate)
-                : a.startDate;
-            const dateB =
-              typeof b.startDate === "string"
-                ? new Date(b.startDate)
-                : b.startDate;
-            return new Date(dateB).getTime() - new Date(dateA).getTime();
-          }),
-          totalDistance,
-          totalTime,
+          activities: yearActivities.sort((a, b) =>
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          ),
+          totalDistance: yearActivities.reduce((s, a) => s + a.distance, 0),
+          totalTime: yearActivities.reduce((s, a) => s + a.movingTime, 0),
           activityCount: yearActivities.length,
         };
       })
@@ -107,15 +85,8 @@ export function ActivityList({ userId }: ActivityListProps) {
     try {
       setIsSyncing(true);
       setError(null);
-      const response = await fetch("/api/strava/activities", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to sync activities");
-      }
-
-      // Refresh activities after sync
+      const response = await fetch("/api/strava/activities", { method: "POST" });
+      if (!response.ok) throw new Error("Failed to sync activities");
       await fetchActivities();
     } catch (err: any) {
       setError(err.message || "Failed to sync activities");
@@ -126,38 +97,44 @@ export function ActivityList({ userId }: ActivityListProps) {
 
   const currentYearStats = yearStats.find((s) => s.year === selectedYear);
 
+  // ── LOADING STATE ──
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-24 gap-6">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-2 border-neon-orange/30 rounded-full" />
+          <div className="absolute inset-0 border-2 border-t-neon-orange rounded-full animate-spin" />
+        </div>
+        <div className="font-mono text-xs text-white/40 tracking-widest uppercase animate-pulse">
+          LOADING MISSION DATA...
+        </div>
       </div>
     );
   }
 
+  // ── ERROR STATE ──
   if (error && activities.length === 0) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p className="text-red-700">{error}</p>
-        <button
-          onClick={fetchActivities}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
-          Retry
+      <div className="border border-red-alert/60 bg-cyber-card p-6 text-center"
+        style={{ boxShadow: "0 0 20px rgba(255,23,68,0.2)" }}>
+        <div className="font-bebas text-3xl text-red-alert mb-2">TRANSMISSION ERROR</div>
+        <p className="font-mono text-sm text-white/60 mb-4">{error}</p>
+        <button onClick={fetchActivities}
+          className="btn-brutal px-6 py-2 text-xs" style={{ borderColor: "#FF1744" }}>
+          RETRY
         </button>
       </div>
     );
   }
 
+  // ── EMPTY STATE ──
   if (activities.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-        <p className="text-gray-600 mb-4">No activities found.</p>
-        <button
-          onClick={handleSync}
-          disabled={isSyncing}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSyncing ? "Syncing..." : "Sync Activities"}
+      <div className="border border-neon-orange/40 bg-cyber-card p-8 text-center">
+        <div className="font-bebas text-4xl text-neon-orange mb-2">NO DATA FOUND</div>
+        <p className="font-mono text-sm text-white/50 mb-6">Sync your Strava activities to begin</p>
+        <button onClick={handleSync} disabled={isSyncing} className="btn-brutal px-8 py-3 text-sm disabled:opacity-40">
+          {isSyncing ? "SYNCING..." : "SYNC ACTIVITIES"}
         </button>
       </div>
     );
@@ -165,156 +142,132 @@ export function ActivityList({ userId }: ActivityListProps) {
 
   return (
     <div className="space-y-6">
+
+      {/* ── HEADER ROW ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Activities</h2>
-          <p className="text-gray-600 mt-1">
-            {activities.length} total activities
-          </p>
+          <div className="hud-label mb-1">// MISSION CONTROL</div>
+          <h2 className="font-bebas text-3xl sm:text-4xl text-white tracking-wide">
+            YOUR <span className="text-neon-orange">{activities.length}</span> ACTIVITIES
+          </h2>
         </div>
-        <div className="flex items-center gap-3">
 
-          <a href="/chat"
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
-          >
-            🤖 AI Coach
-          </a>
-          {/* View Mode Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode("summary")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "summary"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+        {/* Controls */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          {/* View mode tabs */}
+          <div className="flex gap-1 bg-black/60 border border-neon-orange/20 p-1 w-full sm:w-auto">
+            {(["summary", "list"] as const).map((mode) => (
+              <button
+                key={mode}
+                id={`view-tab-${mode}`}
+                onClick={() => setViewMode(mode)}
+                className={`flex-1 px-6 py-2 font-mono text-xs uppercase tracking-wider transition-all ${
+                  viewMode === mode
+                    ? "bg-neon-orange text-black font-bold"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
                 }`}
-            >
-              📊 Summary
-            </button>
-            <button
-              onClick={() => setViewMode("compare")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "compare"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-                }`}
-            >
-              📈 Compare
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === "list"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-                }`}
-            >
-              📋 List
-            </button>
+              >
+                {mode === "summary" ? "📊 SUMMARY" : "📋 LIST"}
+              </button>
+            ))}
           </div>
+
+          {/* Sync button */}
           <button
+            id="sync-activities-btn"
             onClick={handleSync}
             disabled={isSyncing}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-brutal px-5 py-2.5 text-xs w-full sm:w-auto disabled:opacity-40"
           >
             {isSyncing ? (
-              <span className="flex items-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Syncing...
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                SYNCING
               </span>
-            ) : (
-              "Sync Activities"
-            )}
+            ) : "⟳ SYNC"}
           </button>
         </div>
       </div>
 
+      {/* ── ERROR BANNER ── */}
       {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800 text-sm">{error}</p>
+        <div className="border border-red-alert/60 bg-red-alert/10 p-3 font-mono text-xs text-red-alert animate-alert-flicker">
+          ⚠ {error}
         </div>
       )}
 
-      {/* Year Selector - Always show */}
+      {/* ── YEAR SELECTOR ── */}
       {yearStats.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Year
-          </label>
-          <div className="flex flex-wrap gap-2">
+        <div className="bg-cyber-card border border-neon-orange/20 p-4">
+          <div className="hud-label mb-3">// SELECT YEAR</div>
+          {/* Horizontal scroll for many years — hidden scrollbar */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             {yearStats.map((stat) => (
               <button
                 key={stat.year}
+                id={`year-tab-${stat.year}`}
                 onClick={() => setSelectedYear(stat.year)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedYear === stat.year
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                className={`circuit-tab flex-shrink-0 ${selectedYear === stat.year ? "active" : ""}`}
               >
-                {stat.year} ({stat.activityCount})
+                {stat.year}
+                <span className="ml-1.5 text-[10px] opacity-60">({stat.activityCount})</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* View Mode Content */}
+      {/* ── VIEW CONTENT ── */}
       {viewMode === "summary" && selectedYear && (
         <YearEndSummary year={selectedYear} />
       )}
 
-      {viewMode === "compare" && yearStats.length >= 2 && (
-        <YearComparison yearStats={yearStats} />
-      )}
+
 
       {viewMode === "list" && (
         <>
-          {/* Year Statistics */}
           {currentYearStats && (
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-              <h3 className="text-xl font-bold mb-4">{currentYearStats.year} Summary</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm opacity-90">Activities</p>
-                  <p className="text-2xl font-bold">{currentYearStats.activityCount}</p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-90">Total Distance</p>
-                  <p className="text-2xl font-bold">
-                    {formatDistance(currentYearStats.totalDistance)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-90">Total Time</p>
-                  <p className="text-2xl font-bold">
-                    {formatDuration(currentYearStats.totalTime)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-90">Avg per Activity</p>
-                  <p className="text-2xl font-bold">
-                    {formatDistance(
-                      currentYearStats.totalDistance / currentYearStats.activityCount
-                    )}
-                  </p>
-                </div>
+            <div className="border border-neon-orange/30 bg-cyber-card p-6"
+              style={{ borderLeft: "3px solid #FF5500" }}>
+              <div className="font-bebas text-2xl text-neon-orange mb-4 tracking-wide">
+                {currentYearStats.year} MISSION SUMMARY
               </div>
-            </div>
-          )}
-
-          {/* Activities Grid */}
-          {currentYearStats && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {currentYearStats.year} Activities ({currentYearStats.activityCount})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentYearStats.activities.map((activity) => (
-                  <ActivityCard key={activity._id} activity={activity} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "ACTIVITIES", value: currentYearStats.activityCount.toString() },
+                  { label: "DISTANCE", value: formatDistance(currentYearStats.totalDistance) },
+                  { label: "TOTAL TIME", value: formatDuration(currentYearStats.totalTime) },
+                  { label: "AVG DISTANCE", value: formatDistance(currentYearStats.totalDistance / currentYearStats.activityCount) },
+                ].map((item) => (
+                  <div key={item.label} className="reticle p-4 border border-neon-orange/20">
+                    <div className="hud-label mb-1">{item.label}</div>
+                    <div className="font-bebas text-2xl text-neon-orange">{item.value}</div>
+                  </div>
                 ))}
               </div>
             </div>
           )}
+
+          {currentYearStats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {currentYearStats.activities.map((activity) => (
+                <ActivityCard 
+                  key={activity._id} 
+                  activity={activity} 
+                  onShare={() => openShareSheet(activity)} 
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
+
+      {/* Centralized Share Sheet */}
+      <ShareBottomSheet 
+        isOpen={isOpen} 
+        activity={activeActivity} 
+        onClose={closeShareSheet} 
+      />
     </div>
   );
 }
-

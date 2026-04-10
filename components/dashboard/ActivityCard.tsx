@@ -7,163 +7,138 @@ import Link from "next/link";
 interface ActivityCardProps {
   activity: ActivityData;
   index?: number;
+  onShare: () => void;
 }
 
 const activityTypeIcons: Record<string, string> = {
-  Run: "🏃",
-  Ride: "🚴",
-  Walk: "🚶",
-  Hike: "🥾",
-  Swim: "🏊",
-  Workout: "💪",
-  default: "🏃",
+  Run: "🏃", Ride: "🚴", Walk: "🚶", Hike: "🥾",
+  Swim: "🏊", Workout: "💪", default: "🏃",
 };
 
 const activityTypeColors: Record<string, string> = {
-  Run: "from-orange-500 to-red-500",
-  Ride: "from-blue-500 to-cyan-500",
-  Walk: "from-green-500 to-emerald-500",
-  Hike: "from-amber-500 to-yellow-500",
-  Swim: "from-blue-600 to-indigo-600",
-  Workout: "from-purple-500 to-pink-500",
-  default: "from-gray-500 to-gray-700",
+  Run: "#FF5500", Ride: "#00F5FF", Walk: "#AAFF00",
+  Hike: "#FFD700", Swim: "#8B2FC9", Workout: "#E91E8C", default: "#FF5500",
 };
 
-export function ActivityCard({ activity, index = 0 }: ActivityCardProps) {
+export function ActivityCard({ activity, index = 0, onShare }: ActivityCardProps) {
   const icon = activityTypeIcons[activity.type] || activityTypeIcons.default;
-  const gradient = activityTypeColors[activity.type] || activityTypeColors.default;
-  const staggerClass = index < 6 ? `stagger-${Math.min(index, 5)}` : "";
+  const color = activityTypeColors[activity.type] || activityTypeColors.default;
+
+  const getPaceOrSpeed = () => {
+    if (activity.movingTime <= 0 || activity.distance <= 0) return null;
+    const noPace = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
+    if (noPace.includes(activity.type)) return null;
+    if (["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type)) {
+      return `${((activity.distance / activity.movingTime) * 3.6).toFixed(1)} km/h`;
+    }
+    if (activity.type === "Swim") {
+      const s = (activity.movingTime / activity.distance) * 100;
+      return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")} /100m`;
+    }
+    const s = (activity.movingTime / activity.distance) * 1000;
+    return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")} /km`;
+  };
+
+  const thirdStat = (() => {
+    if (activity.totalElevationGain) return { label: "ELEV", value: `${Math.round(activity.totalElevationGain)}m` };
+    const ps = getPaceOrSpeed();
+    if (ps) return { label: ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type) ? "SPEED" : "PACE", value: ps };
+    return { label: "TYPE", value: activity.type };
+  })();
 
   return (
-    <Link href={`/activity/${activity._id}`}>
-      <div className={`
-        glass rounded-xl p-6 hover-lift transition-smooth cursor-pointer
-        border border-white/20 shadow-md hover:shadow-xl
-        animate-scale-in ${staggerClass}
-        group
-      `}>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`
-              w-12 h-12 rounded-lg bg-gradient-to-br ${gradient}
-              flex items-center justify-center shadow-lg
-              group-hover:scale-110 transition-transform
-            `}>
-              <span className="text-2xl">{icon}</span>
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
+    <div className="relative">
+      <Link href={`/activity/${activity._id}`}>
+        <div
+          className="relative p-5 cursor-pointer group transition-all duration-300"
+          style={{
+            background: "#080808",
+            border: `1px solid ${color}35`,
+            animationDelay: `${index * 60}ms`,
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.borderColor = color;
+            el.style.boxShadow = `0 0 25px ${color}18, inset 0 0 20px ${color}06`;
+            el.style.background = `${color}06`;
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.borderColor = `${color}35`;
+            el.style.boxShadow = "none";
+            el.style.background = "#080808";
+          }}
+        >
+          {/* Reticle corners */}
+          <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t border-l" style={{ borderColor: color }} />
+          <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b border-r" style={{ borderColor: color }} />
+
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">{icon}</span>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-mono text-sm text-white truncate group-hover:text-neon-orange transition-colors">
                 {activity.name}
               </h3>
-              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color }}>
                 {activity.type}
               </span>
             </div>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Distance</p>
-            <p className="text-lg font-bold text-gray-900">
-              {formatDistance(activity.distance)}
-            </p>
-          </div>
-          <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Time</p>
-            <p className="text-lg font-bold text-gray-900">
-              {formatDuration(activity.movingTime)}
-            </p>
-          </div>
-          {activity.totalElevationGain ? (
-            <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Elevation</p>
-              <p className="text-lg font-bold text-gray-900">
-                {Math.round(activity.totalElevationGain)}m
-              </p>
-            </div>
-          ) : (() => {
-            // Activities that don't use pace or speed (court sports, gym activities, etc.)
-            const noPaceActivities = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
-            const showsPaceOrSpeed = !noPaceActivities.includes(activity.type);
-
-            if (!showsPaceOrSpeed) {
-              // For activities without pace/speed, show calories or just empty
-              return (
-                <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Activity</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {activity.type}
-                  </p>
-                </div>
-              );
-            }
-
-            // For activities with pace/speed
-            return (
-              <div className="bg-white/50 rounded-lg p-3 backdrop-blur-sm">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  {["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type) ? "Speed" : "Pace"}
-                </p>
-                <p className="text-lg font-bold text-gray-900">
-                  {activity.movingTime > 0 && activity.distance > 0
-                    ? ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type)
-                      ? `${((activity.distance / activity.movingTime) * 3.6).toFixed(1)} km/h`
-                      : activity.type === "Swim"
-                        ? (() => {
-                          const secondsPer100m = (activity.movingTime / activity.distance) * 100;
-                          const mins = Math.floor(secondsPer100m / 60);
-                          const secs = Math.floor(secondsPer100m % 60);
-                          return `${mins}:${secs.toString().padStart(2, '0')} /100m`;
-                        })()
-                        : (() => {
-                          const secondsPerKm = (activity.movingTime / activity.distance) * 1000;
-                          const mins = Math.floor(secondsPerKm / 60);
-                          const secs = Math.floor(secondsPerKm % 60);
-                          return `${mins}:${secs.toString().padStart(2, '0')} /km`;
-                        })()
-                    : "N/A"
-                  }
-                </p>
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {[
+              { label: "DIST", value: formatDistance(activity.distance) },
+              { label: "TIME", value: formatDuration(activity.movingTime) },
+              { label: thirdStat.label, value: thirdStat.value },
+            ].map(stat => (
+              <div key={stat.label} className="p-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="font-mono text-[9px] text-white/35 uppercase tracking-widest mb-0.5">{stat.label}</div>
+                <div className="font-mono text-xs text-white/80 truncate">{stat.value}</div>
               </div>
-            );
-          })()}
-        </div>
-
-        {/* Footer */}
-        <div className="pt-3 border-t border-gray-200/50 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="font-medium">
-              {formatDate(
-                typeof activity.startDate === "string"
-                  ? new Date(activity.startDate)
-                  : activity.startDate
-              )}
-            </span>
+            ))}
           </div>
 
-          {activity.location?.city && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              </svg>
-              <span>{activity.location.city}</span>
+          {/* Footer — date + location + copy button */}
+          <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="font-mono text-[10px] text-white/35">
+                {formatDate(typeof activity.startDate === "string" ? new Date(activity.startDate) : activity.startDate)}
+              </span>
+              {activity.location?.city && (
+                <span className="font-mono text-[10px] text-white/30 flex items-center gap-1 hidden sm:flex">
+                  <span style={{ color }}>📍</span> {activity.location.city}
+                </span>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Hover Arrow */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+            {/* "⧉ Share" button */}
+            <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+              <button
+                onClick={onShare}
+                className="font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 flex items-center gap-1.5 transition-all text-neon-orange"
+                style={{
+                  border: "1px solid rgba(255,85,0,0.4)",
+                  background: "rgba(0,0,0,0.7)",
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = "rgba(255,85,0,0.1)";
+                  el.style.borderColor = "rgba(255,85,0,0.8)";
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = "rgba(0,0,0,0.7)";
+                  el.style.borderColor = "rgba(255,85,0,0.4)";
+                }}
+              >
+                ⧉ Share
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getStravaAccessToken, fetchDetailedActivity, fetchActivityStreams } from "@/lib/strava";
+import { getValidAccessToken, fetchDetailedActivity, fetchActivityStreams } from "@/lib/strava";
 
 export async function GET(
     request: Request,
@@ -19,8 +19,8 @@ export async function GET(
             return NextResponse.json({ error: "Invalid activity ID" }, { status: 400 });
         }
 
-        // Get user's Strava access token
-        const accessToken = await getStravaAccessToken((session.user as any).id);
+        // Get user's Strava access token (automatically refreshes if needed)
+        const accessToken = await getValidAccessToken((session.user as any).id);
 
         if (!accessToken) {
             return NextResponse.json(

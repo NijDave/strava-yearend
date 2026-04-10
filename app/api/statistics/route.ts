@@ -58,6 +58,17 @@ export async function GET(request: Request) {
     const locationInsights = calculateLocationInsights(activities as any);
     const funFacts = generateFunFacts(coreSummary, activities as any);
 
+    // Lightweight GPS data for client-side geocoding (start_latlng only)
+    const gpsActivities = (activities as any[])
+      .filter(a => a.rawData?.start_latlng?.length === 2)
+      .map(a => ({
+        _id: a._id?.toString(),
+        type: a.type,
+        name: a.name,
+        startDate: a.startDate,
+        startLatlng: a.rawData.start_latlng as [number, number],
+      }));
+
     return NextResponse.json({
       year,
       coreSummary,
@@ -68,6 +79,7 @@ export async function GET(request: Request) {
       timeOfDay,
       locationInsights,
       funFacts,
+      gpsActivities,
     });
   } catch (error: any) {
     console.error("Error fetching statistics:", error);

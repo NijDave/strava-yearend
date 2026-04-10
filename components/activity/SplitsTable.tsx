@@ -1,129 +1,115 @@
 "use client";
 
 interface SplitsTableProps {
-    splits: any[];
+  splits: any[];
 }
 
 export function SplitsTable({ splits }: SplitsTableProps) {
-    if (!splits || splits.length === 0) {
-        return null;
-    }
+  if (!splits || splits.length === 0) return null;
 
-    // Helper to format pace
-    const formatPace = (metersPerSecond: number) => {
-        if (!metersPerSecond || metersPerSecond === 0) return "N/A";
-        const secondsPerKm = 1000 / metersPerSecond;
-        const minutes = Math.floor(secondsPerKm / 60);
-        const seconds = Math.floor(secondsPerKm % 60);
-        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-    };
+  const formatPace = (mps: number) => {
+    if (!mps || mps === 0) return "—";
+    const spk = 1000 / mps;
+    return `${Math.floor(spk / 60)}:${Math.floor(spk % 60).toString().padStart(2, "0")}`;
+  };
 
-    // Helper to format time
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
 
-    // Find fastest split
-    const fastestSplitIndex = splits.reduce((fastestIdx, split, idx) => {
-        if (!splits[fastestIdx].average_speed || split.average_speed > splits[fastestIdx].average_speed) {
-            return idx;
-        }
-        return fastestIdx;
-    }, 0);
+  const fastestIdx = splits.reduce((fi, split, idx) => {
+    if (!splits[fi].average_speed || split.average_speed > splits[fi].average_speed) return idx;
+    return fi;
+  }, 0);
 
-    return (
-        <div className="glass rounded-2xl p-6 animate-scale-in">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <span className="text-3xl">📊</span>
-                Split Times
-            </h2>
+  const headers = ["#", "DIST", "TIME", "PACE /km", "ELEV", "HR"];
+  const headerClasses = ["text-left", "text-right", "text-right", "text-right", "text-right", "text-right"];
 
-            <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead>
-                        <tr className="border-b-2 border-gray-200">
-                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Split</th>
-                            <th className="text-right py-3 px-4 font-semibold text-gray-700">Distance</th>
-                            <th className="text-right py-3 px-4 font-semibold text-gray-700">Time</th>
-                            <th className="text-right py-3 px-4 font-semibold text-gray-700">Pace</th>
-                            <th className="text-right py-3 px-4 font-semibold text-gray-700">Elevation</th>
-                            <th className="text-right py-3 px-4 font-semibold text-gray-700">Avg HR</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {splits.map((split, index) => {
-                            const isFastest = index === fastestSplitIndex;
-                            return (
-                                <tr
-                                    key={index}
-                                    className={`
-                    border-b border-gray-100 transition-smooth hover:bg-gray-50
-                    ${isFastest ? "bg-green-50 hover:bg-green-100" : ""}
-                  `}
-                                >
-                                    <td className="py-3 px-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-gray-900">{index + 1}</span>
-                                            {isFastest && (
-                                                <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full font-semibold">
-                                                    Fastest
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="text-right py-3 px-4 text-gray-700">
-                                        {(split.distance / 1000).toFixed(2)} km
-                                    </td>
-                                    <td className="text-right py-3 px-4 font-mono text-gray-700">
-                                        {formatTime(split.moving_time || split.elapsed_time)}
-                                    </td>
-                                    <td className="text-right py-3 px-4 font-mono text-gray-700">
-                                        {formatPace(split.average_speed)}
-                                    </td>
-                                    <td className="text-right py-3 px-4 text-gray-700">
-                                        {split.elevation_difference ? `${Math.round(split.elevation_difference)} m` : "-"}
-                                    </td>
-                                    <td className="text-right py-3 px-4 text-gray-700">
-                                        {split.average_heartrate ? `${Math.round(split.average_heartrate)} bpm` : "-"}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+  return (
+    <div className="cyber-card p-4 sm:p-6">
+      <div className="hud-label mb-4">// SPLIT TIMES</div>
 
-            {/* Summary */}
-            <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">Total Splits</div>
-                    <div className="text-2xl font-bold text-gray-900">{splits.length}</div>
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">Fastest Pace</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                        {formatPace(splits[fastestSplitIndex].average_speed)}
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px]">
+          <thead>
+            <tr style={{ borderBottom: "2px solid rgba(255,85,0,0.4)" }}>
+              {headers.map((h, i) => (
+                <th key={h}
+                  className={`${headerClasses[i]} py-2 px-3 font-mono text-[10px] tracking-widest text-neon-orange uppercase`}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {splits.map((split, index) => {
+              const isFastest = index === fastestIdx;
+              return (
+                <tr key={index}
+                  style={{
+                    background: isFastest
+                      ? "rgba(255,85,0,0.08)"
+                      : index % 2 === 0 ? "#111" : "#0d0d0d",
+                    borderBottom: "1px solid rgba(255,85,0,0.1)",
+                    borderLeft: isFastest ? "2px solid #FF5500" : "2px solid transparent",
+                  }}>
+                  {/* # */}
+                  <td className="text-left py-2.5 px-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-white/80">{index + 1}</span>
+                      {isFastest && (
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-neon-orange px-1.5 py-0.5"
+                          style={{ border: "1px solid rgba(255,85,0,0.6)", background: "rgba(255,85,0,0.1)" }}>
+                          FASTEST
+                        </span>
+                      )}
                     </div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">Avg Pace</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                        {formatPace(
-                            splits.reduce((sum, s) => sum + (s.average_speed || 0), 0) / splits.length
-                        )}
-                    </div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
-                    <div className="text-sm text-gray-600 mb-1">Total Elevation</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                        {Math.round(
-                            splits.reduce((sum, s) => sum + (s.elevation_difference || 0), 0)
-                        )} m
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+                  </td>
+                  {/* DIST */}
+                  <td className="text-right py-2.5 px-3 font-mono text-sm text-white/70">
+                    {(split.distance / 1000).toFixed(2)} km
+                  </td>
+                  {/* TIME */}
+                  <td className="text-right py-2.5 px-3 font-mono text-sm text-white/70">
+                    {formatTime(split.moving_time || split.elapsed_time)}
+                  </td>
+                  {/* PACE */}
+                  <td className="text-right py-2.5 px-3 font-mono text-sm"
+                    style={{ color: isFastest ? "#FF5500" : "rgba(255,255,255,0.7)" }}>
+                    {formatPace(split.average_speed)}
+                  </td>
+                  {/* ELEV */}
+                  <td className="text-right py-2.5 px-3 font-mono text-sm text-white/50">
+                    {split.elevation_difference != null ? `${Math.round(split.elevation_difference)}m` : "—"}
+                  </td>
+                  {/* HR */}
+                  <td className="text-right py-2.5 px-3 font-mono text-sm text-white/50">
+                    {split.average_heartrate ? `${Math.round(split.average_heartrate)}` : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Summary cards */}
+      <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4" style={{ borderTop: "1px solid rgba(255,85,0,0.2)" }}>
+        {[
+          { label: "TOTAL SPLITS", value: splits.length.toString() },
+          { label: "FASTEST PACE", value: formatPace(splits[fastestIdx].average_speed) },
+          { label: "AVG PACE", value: formatPace(splits.reduce((s, sp) => s + (sp.average_speed || 0), 0) / splits.length) },
+          { label: "TOTAL ELEV", value: `${Math.round(splits.reduce((s, sp) => s + (sp.elevation_difference || 0), 0))}m` },
+        ].map((item, i) => (
+          <div key={i} className="relative p-3" style={{ background: "#0a0a0a", border: "1px solid rgba(255,85,0,0.2)" }}>
+            <div className="absolute top-1 right-1 w-2 h-2 border-t border-r border-neon-orange/30" />
+            <div className="hud-label mb-1">{item.label}</div>
+            <div className="font-bebas text-xl text-neon-orange">{item.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

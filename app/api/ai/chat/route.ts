@@ -15,9 +15,8 @@ export async function GET() {
         }
         await connectDB();
         const userId = new mongoose.Types.ObjectId(session.user.id);
-        // Fetch newest 100 first, then reverse so client gets chronological order
         const history = await ChatHistory.find({ userId })
-            .sort({ createdAt: -1 })
+            .sort({ _id: -1 })
             .limit(100)
             .lean();
         history.reverse();
@@ -91,9 +90,8 @@ Last 20 activities (detailed):
 ${JSON.stringify(activitySummary.slice(0, 20), null, 2)}
     `.trim();
 
-        // Load past chat history for context (newest 20, reversed to chronological)
         const chatHistory = await ChatHistory.find({ userId })
-            .sort({ createdAt: -1 })
+            .sort({ _id: -1 })
             .limit(20)
             .lean();
 
@@ -123,27 +121,26 @@ ${stravaContext}`,
             { role: "user", content: message },
         ];
 
-        const ollamaRes = await fetch("http://127.0.0.1:11434/api/chat", {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify({
-                model: "gemma3:4b",
+                model: "llama-3.3-70b-versatile",
                 messages,
-                stream: false,
             }),
         });
 
-        if (!ollamaRes.ok) {
-            const errText = await ollamaRes.text();
-            console.error("Ollama error:", errText);
-            throw new Error("Ollama request failed");
+        if (!groqRes.ok) {
+            console.error("Groq API error:", await groqRes.text());
+            return NextResponse.json({ error: "AI service failed" }, { status: 500 });
         }
 
-        const ollamaData = await ollamaRes.json();
-        const reply =
-            ollamaData.message?.content ?? "Sorry, I couldn't respond.";
+        const groqData = await groqRes.json();
+        const reply = groqData.choices?.[0]?.message?.content ?? "Sorry, I couldn't respond.";
 
-        // Save both messages atomically — only after a successful AI reply
         await ChatHistory.insertMany([
             { userId, role: "user", content: message },
             { userId, role: "assistant", content: reply },

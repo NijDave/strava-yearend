@@ -1,276 +1,173 @@
 "use client";
 
 interface MetricsGridProps {
-    activity: any;
-    streams: any;
+  activity: any;
+  streams: any;
 }
 
 interface MetricCardProps {
-    icon: string;
-    label: string;
-    value: string;
-    subValue?: string;
-    gradient: string;
-    delay?: string;
+  icon: string;
+  label: string;
+  value: string;
+  subValue?: string;
+  accentColor?: string;
+  index?: number;
 }
 
-function MetricCard({ icon, label, value, subValue, gradient, delay = "" }: MetricCardProps) {
-    return (
-        <div className={`glass rounded-xl p-6 hover-lift transition-smooth animate-scale-in ${delay}`}>
-            <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg`}>
-                <span className="text-2xl">{icon}</span>
-            </div>
-            <div className="text-sm font-medium text-gray-600 mb-1">{label}</div>
-            <div className="text-2xl font-bold text-gray-900">{value}</div>
-            {subValue && <div className="text-sm text-gray-500 mt-1">{subValue}</div>}
-        </div>
-    );
+function MetricCard({ icon, label, value, subValue, accentColor = "#FF5500", index = 0 }: MetricCardProps) {
+  return (
+    <div
+      className="relative p-4 sm:p-5 group transition-all duration-300"
+      style={{
+        background: "#080808",
+        border: `1px solid ${accentColor}40`,
+        animationDelay: `${index * 60}ms`,
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = accentColor;
+        el.style.boxShadow = `0 0 20px ${accentColor}20, inset 0 0 20px ${accentColor}08`;
+        el.style.background = `${accentColor}08`;
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = `${accentColor}40`;
+        el.style.boxShadow = "none";
+        el.style.background = "#080808";
+      }}
+    >
+      {/* Reticle corners */}
+      <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t border-l" style={{ borderColor: accentColor }} />
+      <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b border-r" style={{ borderColor: accentColor }} />
+
+      {/* Content */}
+      <div className="flex items-start gap-3 mb-2">
+        <span className="text-xl flex-shrink-0">{icon}</span>
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">{label}</div>
+      </div>
+
+      {/* Value */}
+      <div className="font-bebas leading-none mt-1"
+        style={{
+          fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+          color: accentColor,
+          textShadow: `0 0 16px ${accentColor}60`,
+        }}>
+        {value}
+      </div>
+
+      {subValue && (
+        <div className="font-mono text-[10px] text-white/30 mt-1 line-clamp-1">{subValue}</div>
+      )}
+    </div>
+  );
 }
 
 export function MetricsGrid({ activity, streams }: MetricsGridProps) {
-    // Helper functions
-    const formatDistance = (meters: number) => {
-        const km = meters / 1000;
-        return `${km.toFixed(2)} km`;
-    };
+  const formatDistance = (m: number) => `${(m / 1000).toFixed(2)} km`;
 
-    const formatTime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
+  const formatTime = (seconds: number) => {
+    if (!seconds) return "--:--";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
 
-        if (hours > 0) {
-            return `${hours}h ${minutes}m ${secs}s`;
-        }
-        return `${minutes}m ${secs}s`;
-    };
+  const formatPace = (mps: number) => {
+    if (!mps || mps === 0) return "N/A";
+    const spk = 1000 / mps;
+    return `${Math.floor(spk / 60)}:${Math.floor(spk % 60).toString().padStart(2, "0")} /km`;
+  };
 
-    const formatPace = (metersPerSecond: number) => {
-        if (!metersPerSecond || metersPerSecond === 0) return "N/A";
-        const secondsPerKm = 1000 / metersPerSecond;
-        const minutes = Math.floor(secondsPerKm / 60);
-        const seconds = Math.floor(secondsPerKm % 60);
-        return `${minutes}:${seconds.toString().padStart(2, "0")} /km`;
-    };
+  const formatSpeed = (mps: number) =>
+    (!mps || mps === 0) ? "N/A" : `${(mps * 3.6).toFixed(1)} km/h`;
 
-    const formatSpeed = (metersPerSecond: number) => {
-        if (!metersPerSecond || metersPerSecond === 0) return "N/A";
-        const kmPerHour = metersPerSecond * 3.6;
-        return `${kmPerHour.toFixed(1)} km/h`;
-    };
+  const formatSwimPace = (mps: number) => {
+    if (!mps || mps === 0) return "N/A";
+    const s100 = 100 / mps;
+    return `${Math.floor(s100 / 60)}:${Math.floor(s100 % 60).toString().padStart(2, "0")} /100m`;
+  };
 
-    const formatSwimPace = (metersPerSecond: number) => {
-        if (!metersPerSecond || metersPerSecond === 0) return "N/A";
-        const secondsPer100m = 100 / metersPerSecond;
-        const minutes = Math.floor(secondsPer100m / 60);
-        const seconds = Math.floor(secondsPer100m % 60);
-        return `${minutes}:${seconds.toString().padStart(2, "0")} /100m`;
-    };
+  // Naming fallbacks (Strava API vs MongoDB camelCase)
+  const movingTime = activity.movingTime ?? activity.moving_time ?? 0;
+  const elapsedTime = activity.elapsedTime ?? activity.elapsed_time ?? 0;
+  const elevationGain = activity.totalElevationGain ?? activity.total_elevation_gain ?? 0;
+  const avgSpeed = activity.averageSpeed ?? activity.average_speed ?? 0;
+  const maxSpeed = activity.max_speed ?? 0;
 
-    const calculateCalories = () => {
-        if (activity.calories) return activity.calories;
-        // Rough estimate: 1 calorie per kg per km for running
-        const km = activity.distance / 1000;
-        return Math.round(km * 65); // Assuming average 65kg
-    };
+  const avgHR = streams?.heartrate?.data
+    ? Math.round(streams.heartrate.data.reduce((a: number, b: number) => a + b, 0) / streams.heartrate.data.length)
+    : (activity.averageHeartrate || activity.average_heartrate || null);
 
-    const calculateSteps = () => {
-        if (activity.type === "Run" || activity.type === "Walk" || activity.type === "Hike") {
-            // Rough estimate: 1250 steps per km
-            const km = activity.distance / 1000;
-            return Math.round(km * 1250);
-        }
-        return null;
-    };
+  const maxHR = streams?.heartrate?.data
+    ? Math.max(...streams.heartrate.data)
+    : (activity.maxHeartrate || activity.max_heartrate || null);
 
-    const getAverageHeartRate = () => {
-        if (streams?.heartrate?.data) {
-            const hrData = streams.heartrate.data;
-            const sum = hrData.reduce((a: number, b: number) => a + b, 0);
-            return Math.round(sum / hrData.length);
-        }
-        return activity.average_heartrate || null;
-    };
+  const avgCadence = (() => {
+    if (streams?.cadence?.data) {
+      const cd = streams.cadence.data.filter((c: number) => c > 0);
+      if (cd.length > 0) return Math.round(cd.reduce((a: number, b: number) => a + b, 0) / cd.length);
+    }
+    return activity.averageCadence || activity.average_cadence || null;
+  })();
 
-    const getMaxHeartRate = () => {
-        if (streams?.heartrate?.data) {
-            return Math.max(...streams.heartrate.data);
-        }
-        return activity.max_heartrate || null;
-    };
+  const bestPace = (() => {
+    if (!streams?.velocity_smooth?.data && !maxSpeed) return null;
+    const mx = streams?.velocity_smooth?.data ? Math.max(...streams.velocity_smooth.data) : maxSpeed;
+    if (["Run", "Walk", "Hike"].includes(activity.type)) return formatPace(mx);
+    if (activity.type === "Swim") return formatSwimPace(mx);
+    return formatSpeed(mx);
+  })();
 
-    const getAverageCadence = () => {
-        if (streams?.cadence?.data) {
-            const cadenceData = streams.cadence.data.filter((c: number) => c > 0);
-            if (cadenceData.length > 0) {
-                const sum = cadenceData.reduce((a: number, b: number) => a + b, 0);
-                return Math.round(sum / cadenceData.length);
-            }
-        }
-        return activity.average_cadence || null;
-    };
+  const calories = activity.calories || (activity.distance ? Math.round((activity.distance / 1000) * 65) : 0);
+  const steps = ["Run", "Walk", "Hike"].includes(activity.type) && activity.distance
+    ? Math.round((activity.distance / 1000) * 1250) : null;
 
-    const getBestPace = () => {
-        if (streams?.velocity_smooth?.data) {
-            const maxSpeed = Math.max(...streams.velocity_smooth.data);
-            if (activity.type === "Run" || activity.type === "Walk" || activity.type === "Hike") {
-                return formatPace(maxSpeed);
-            } else if (activity.type === "Swim") {
-                return formatSwimPace(maxSpeed);
-            } else {
-                return formatSpeed(maxSpeed);
-            }
-        }
-        return null;
-    };
+  const usesPace = ["Run", "Walk", "Hike"].includes(activity.type);
+  const isSwim = activity.type === "Swim";
+  const usesSpeed = ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type);
+  const noPace = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
+  const showPaceOrSpeed = !noPace.includes(activity.type);
 
-    // Determine if activity uses pace or speed
-    const usesPace = ["Run", "Walk", "Hike"].includes(activity.type);
-    const isSwim = activity.type === "Swim";
-    const usesSpeed = ["Ride", "VirtualRide", "EBikeRide", "Bike"].includes(activity.type);
+  // Color by activity type
+  const typeColor: Record<string, string> = {
+    Run: "#FF5500", Ride: "#00F5FF", Walk: "#AAFF00",
+    Hike: "#FFD700", Swim: "#8B2FC9", Workout: "#E91E8C", default: "#FF5500",
+  };
+  const ac = typeColor[activity.type] || typeColor.default;
 
-    // Activities that don't use pace or speed (court sports, gym activities, etc.)
-    const noPaceActivities = ["Badminton", "Tennis", "Squash", "TableTennis", "Workout", "WeightTraining", "Yoga", "Crossfit"];
-    const showsPaceOrSpeed = !noPaceActivities.includes(activity.type);
+  const cards: MetricCardProps[] = [
+    { icon: "📏", label: "Distance", value: formatDistance(activity.distance), accentColor: ac },
+    { icon: "⏱️", label: "Moving Time", value: formatTime(movingTime), accentColor: "#E91E8C" },
+    { icon: "⏳", label: "Elapsed Time", value: formatTime(elapsedTime), accentColor: "#8B2FC9" },
+    { icon: "⛰️", label: "Elevation Gain", value: `${Math.round(elevationGain)} m`, accentColor: "#FFD700" },
+  ];
 
-    const avgHR = getAverageHeartRate();
-    const maxHR = getMaxHeartRate();
-    const avgCadence = getAverageCadence();
-    const calories = calculateCalories();
-    const steps = calculateSteps();
-    const bestPace = getBestPace();
+  if (calories) cards.push({ icon: "🔥", label: "Calories", value: `${calories} kcal`, accentColor: "#FF1744" });
+  if (avgHR) cards.push({ icon: "❤️", label: "Avg Heart Rate", value: `${avgHR} bpm`, subValue: maxHR ? `Max: ${maxHR} bpm` : undefined, accentColor: "#FF1744" });
+  if (showPaceOrSpeed && usesPace) cards.push({ icon: "⚡", label: "Avg Pace", value: formatPace(avgSpeed), subValue: bestPace ? `Best: ${bestPace}` : undefined, accentColor: ac });
+  if (showPaceOrSpeed && isSwim) cards.push({ icon: "🏊", label: "Avg Pace", value: formatSwimPace(avgSpeed), subValue: bestPace ? `Best: ${bestPace}` : undefined, accentColor: "#8B2FC9" });
+  if (showPaceOrSpeed && usesSpeed) cards.push({ icon: "🚴", label: "Avg Speed", value: formatSpeed(avgSpeed), subValue: bestPace ? `Max: ${bestPace}` : undefined, accentColor: "#00F5FF" });
+  if (avgCadence) cards.push({ icon: "👟", label: "Avg Cadence", value: `${avgCadence} spm`, accentColor: "#00F5FF" });
+  if (steps) cards.push({ icon: "🚶", label: "Est. Steps", value: steps.toLocaleString(), accentColor: "#AAFF00" });
+  
+  const watts = activity.averageWatts || activity.average_watts;
+  if (watts) cards.push({ icon: "⚡", label: "Avg Power", value: `${Math.round(watts)} W`, accentColor: "#FFD700" });
+  
+  const temp = activity.averageTemp || activity.average_temp;
+  if (temp) cards.push({ icon: "🌡️", label: "Temperature", value: `${Math.round(temp)}°C`, accentColor: "#FF5500" });
 
-    return (
-        <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <span className="text-3xl">📊</span>
-                Activity Metrics
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <MetricCard
-                    icon="📏"
-                    label="Distance"
-                    value={formatDistance(activity.distance)}
-                    gradient="from-blue-500 to-cyan-500"
-                />
-
-                <MetricCard
-                    icon="⏱️"
-                    label="Moving Time"
-                    value={formatTime(activity.moving_time)}
-                    gradient="from-green-500 to-emerald-500"
-                    delay="stagger-1"
-                />
-
-                <MetricCard
-                    icon="⏳"
-                    label="Elapsed Time"
-                    value={formatTime(activity.elapsed_time)}
-                    gradient="from-purple-500 to-pink-500"
-                    delay="stagger-2"
-                />
-
-                <MetricCard
-                    icon="⛰️"
-                    label="Elevation Gain"
-                    value={`${Math.round(activity.total_elevation_gain || 0)} m`}
-                    gradient="from-amber-500 to-orange-500"
-                    delay="stagger-3"
-                />
-
-                {calories && (
-                    <MetricCard
-                        icon="🔥"
-                        label="Calories"
-                        value={`${calories} kcal`}
-                        gradient="from-red-500 to-pink-500"
-                        delay="stagger-4"
-                    />
-                )}
-
-                {avgHR && (
-                    <MetricCard
-                        icon="❤️"
-                        label="Average Heart Rate"
-                        value={`${avgHR} bpm`}
-                        subValue={maxHR ? `Max: ${maxHR} bpm` : undefined}
-                        gradient="from-rose-500 to-red-500"
-                        delay="stagger-5"
-                    />
-                )}
-
-                {/* Activity-specific pace/speed metric - only for activities where it makes sense */}
-                {showsPaceOrSpeed && usesPace && (
-                    <MetricCard
-                        icon="⚡"
-                        label="Average Pace"
-                        value={formatPace(activity.average_speed)}
-                        subValue={bestPace ? `Best: ${bestPace}` : undefined}
-                        gradient="from-indigo-500 to-blue-500"
-                    />
-                )}
-
-                {showsPaceOrSpeed && isSwim && (
-                    <MetricCard
-                        icon="🏊"
-                        label="Average Pace"
-                        value={formatSwimPace(activity.average_speed)}
-                        subValue={bestPace ? `Best: ${bestPace}` : undefined}
-                        gradient="from-blue-600 to-cyan-600"
-                    />
-                )}
-
-                {showsPaceOrSpeed && usesSpeed && (
-                    <MetricCard
-                        icon="🚴"
-                        label="Average Speed"
-                        value={formatSpeed(activity.average_speed)}
-                        subValue={bestPace ? `Max: ${bestPace}` : undefined}
-                        gradient="from-green-500 to-teal-500"
-                    />
-                )}
-
-                {avgCadence && (
-                    <MetricCard
-                        icon="👟"
-                        label="Average Cadence"
-                        value={`${avgCadence} spm`}
-                        gradient="from-teal-500 to-cyan-500"
-                        delay="stagger-1"
-                    />
-                )}
-
-                {steps && (
-                    <MetricCard
-                        icon="🚶"
-                        label="Estimated Steps"
-                        value={steps.toLocaleString()}
-                        gradient="from-violet-500 to-purple-500"
-                        delay="stagger-2"
-                    />
-                )}
-
-                {activity.average_watts && (
-                    <MetricCard
-                        icon="⚡"
-                        label="Average Power"
-                        value={`${Math.round(activity.average_watts)} W`}
-                        gradient="from-yellow-500 to-amber-500"
-                        delay="stagger-3"
-                    />
-                )}
-
-                {activity.average_temp && (
-                    <MetricCard
-                        icon="🌡️"
-                        label="Temperature"
-                        value={`${Math.round(activity.average_temp)}°C`}
-                        gradient="from-orange-400 to-red-400"
-                        delay="stagger-4"
-                    />
-                )}
-            </div>
-        </div>
-    );
+  return (
+    <div>
+      <div className="hud-label mb-4">// PERFORMANCE METRICS</div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        {cards.map((card, i) => (
+          <MetricCard key={card.label} {...card} index={i} />
+        ))}
+      </div>
+    </div>
+  );
 }
