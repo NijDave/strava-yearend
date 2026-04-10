@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Athlytic — Elite Athlete Analytics",
+  title: "ATHLYTIC - Elite Athlete Analysis",
   description: "Mission control for elite athletes. Track, analyze and dominate every performance metric.",
 };
 
