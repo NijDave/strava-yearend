@@ -1,0 +1,22 @@
+**4.4 Testing and Debugging**
+
+To make sure each part works well, we tested everything one by one:
+
+*   **Unit Testing:** Each core function, like the Strava API data fetcher, the statistics calculator, and the image generator, was tested with dummy data.
+*   **Integration Testing:** We ran the full flow—from logging in with Google, connecting a Strava account, syncing activities, and rendering the dashboard—to ensure it worked smoothly end-to-end.
+*   **AI Model Testing:** We experimented with different AI models before finalizing. We originally tested standard GPT models, but switched to Groq with Llama-3.3 for its incredibly fast, near-instant inference speed, which was perfect for our real-time AI Chat Coach and Roast features.
+*   **Error Handling:** If an API rate limit is hit or a token expires, the system catches the error and safely asks the user to reconnect without crashing.
+*   **Responsive Testing:** We checked the web app on both laptops and mobile phones to ensure the charts and the HTML canvas share overlays looked perfect on any screen size.
+
+**4.5 Database and Data Management**
+
+To keep the system organized and efficient, the following folder structure was followed:
+
+**Folder Structure:**
+
+*   **/app** - Holds all Next.js frontend pages (dashboard, chat, roast) and backend API routes.
+*   **/components** - Contains reusable UI pieces like graphs, buttons, and layout containers.
+*   **/lib** - Stores core logical scripts, such as Strava authentication wrappers and statistics math engines.
+*   **/models** - Defines the MongoDB database schemas (User, Activity, ChatHistory).
+*   **/utils** - Contains helper functions, specifically the canvas drawing logic to generate social share images.
+*   **.env.local** - Securely stores hidden database passwords and API secret keys.

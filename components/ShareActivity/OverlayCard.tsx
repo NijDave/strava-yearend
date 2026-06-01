@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 import { getOverlayStats } from "@/utils/formatActivityOverlay";
 import { polylineToSVG } from "@/utils/polylineToSVG";
 
-export type OverlayVariant = "transparent" | "dark" | "neon" | "light";
+export type OverlayVariant = "transparent" | "dark" | "neon" | "light" | "stats-only";
 
 interface OverlayCardProps {
   activity: any;
@@ -53,6 +53,7 @@ export const OverlayCard = forwardRef<HTMLDivElement, OverlayCardProps>(
             border: "1px solid rgba(0,0,0,0.1)",
           };
         case "transparent":
+        case "stats-only":
         default:
           return {
             bg: "transparent",
@@ -103,7 +104,7 @@ export const OverlayCard = forwardRef<HTMLDivElement, OverlayCardProps>(
             opacity: 0.9,
           }}
         >
-          {variant === "transparent" ? "TRANSPARENT" : variant.toUpperCase()}
+          {variant === "transparent" ? "TRANSPARENT" : variant === "stats-only" ? "STATS ONLY" : variant.toUpperCase()}
         </div>
 
         {/* Stats Section */}
@@ -136,33 +137,35 @@ export const OverlayCard = forwardRef<HTMLDivElement, OverlayCardProps>(
           ))}
         </div>
 
-        {/* Route Map Section */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "center", flex: 1, minHeight: 180, alignItems: "center" }}>
-          {svgData ? (
-            <svg
-              viewBox={svgData.viewBox}
-              width={340}
-              height={180}
-              style={{ filter: `drop-shadow(0 0 6px ${s.routeGlow})` }}
-            >
-              <path
-                d={svgData.d}
-                fill="none"
-                stroke={s.route}
-                strokeWidth={3}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 40, height: 40, border: `2px solid ${s.route}`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6 }}>
-                <span style={{ color: s.route, fontSize: 20 }}>✕</span>
+        {/* Route Map Section — hidden for stats-only */}
+        {variant !== "stats-only" && (
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", flex: 1, minHeight: 180, alignItems: "center" }}>
+            {svgData ? (
+              <svg
+                viewBox={svgData.viewBox}
+                width={340}
+                height={180}
+                style={{ filter: `drop-shadow(0 0 6px ${s.routeGlow})` }}
+              >
+                <path
+                  d={svgData.d}
+                  fill="none"
+                  stroke={s.route}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 40, height: 40, border: `2px solid ${s.route}`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6 }}>
+                  <span style={{ color: s.route, fontSize: 20 }}>✕</span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: s.label, letterSpacing: 1 }}>NO GPS DATA</div>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: s.label, letterSpacing: 1 }}>NO GPS DATA</div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Branding */}
         <div style={{ opacity: 0.8 }}>

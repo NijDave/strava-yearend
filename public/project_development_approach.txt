@@ -1,0 +1,17 @@
+**3.1 PROJECT DEVELOPMENT APPROACH:**
+
+**Requirement Gathering and Analysis:**
+
+Every great project begins with understanding the problem deeply, and for this one, it all started with recognizing the limitations of standard fitness tracking apps. While platforms like Strava provide excellent daily tracking, athletes lack a comprehensive, engaging way to visualize their entire year of effort and receive personalized, intelligent feedback. The goal was to create a dynamic "Year in Sport" dashboard combined with an AI coach that could interpret this data. So, the first step was to gather all functional needs like OAuth integration, bulk activity syncing, complex data aggregation, and AI prompt engineering along with the technical limitations such as API rate limits. We explored what technologies would be needed, how users would interact with the system, and what kind of performance would make the experience smooth and intuitive. This phase laid the groundwork, ensuring that all decisions moving forward had a strong foundation.
+
+**Design Phase:**
+
+The design phase was all about structure—breaking down the system into clean, manageable modules. We mapped out how the Next.js frontend would handle user sessions and routing, how NextAuth would securely manage Google and Strava OAuth flows, and how MongoDB would store large volumes of activity data efficiently. It was like drawing the nervous system of the whole platform, ensuring that data would flow effortlessly from the Strava API through our backend aggregation logic and into the Recharts visualization components. We also paid deep attention to the user experience, adopting a dark-mode, cyberpunk aesthetic to ensure the interface felt premium, highly responsive, and visually engaging.
+
+**Development:**
+
+With the design in place, the actual building began. This phase was exciting—watching ideas turn into real, working components. The frontend was developed using Tailwind CSS to craft responsive layouts for dashboards and interactive maps using Leaflet. On the backend, Next.js API routes handled the heavy lifting: paginating through Strava activities, calculating complex statistics (like longest streaks and pace averages), and securely routing context-rich prompts to the Groq/Llama-3.3 AI model. It was a true collaboration between different modern web technologies, all working together to fetch raw JSON, crunch the numbers, and deliver personalized insights and witty "roasts." It wasn't just about code—it was about bringing a deeply personalized fitness narrative to life.
+
+**Testing:**
+
+Testing ensured the robustness of the entire architecture. We rigorously tested the OAuth flows to handle token expiration and refresh cycles gracefully without interrupting the user experience. The data synchronization logic was stress-tested against Strava's rate limits to ensure the application could safely ingest hundreds of activities for power users. Furthermore, we validated the AI integration by testing various prompt contexts to ensure the AI Coach provided accurate, context-aware advice based on real user metrics. Finally, cross-browser and mobile responsiveness testing was conducted to guarantee the dashboard and the HTML5 Canvas social-share overlay rendered perfectly across all devices.

@@ -1,0 +1,16 @@
+**CHAPTER 6: LIMITATIONS & FUTURE ENHANCEMENTS**
+
+**6.1 Limitations**
+
+*   **Strava API Rate Limits:** The app is restricted by Strava to 100 requests per 15 minutes and 1000 per day, which can cause sync delays if many users join simultaneously.
+*   **Groq AI Dependency:** The AI Chat Coach and Roast features rely entirely on the external Groq API. Slow internet connections or Groq server downtime will break these features.
+*   **Strava Users Only:** The platform requires a Strava account to function, excluding athletes who only use Garmin Connect, Apple Health, or Google Fit directly.
+*   **Optimized for Runners & Cyclists:** While it imports all data, the charts and AI insights are heavily optimized for running and cycling. Swimming or gym workouts lack detailed metrics.
+*   **AI Response Variability:** Because the Llama-3.3 model generates responses dynamically, the tone of the coaching or the harshness of the roast can sometimes vary unpredictably.
+
+**6.2 Future Enhancements**
+
+*   **Multi-Platform Integration:** Add OAuth support for Garmin, Apple Health, and Coros so non-Strava users can also generate their Year-End reports.
+*   **Automated Background Sync:** Implement cron jobs to automatically fetch new activities in the background, rather than relying on manual user syncs or webhooks.
+*   **Social Leaderboards:** Create a global leaderboard where users can compare their total distances or "Roast Scores" with friends.
+*   **Export to Video:** Upgrade the HTML Canvas sharing feature to generate 15-second animated summary videos for Instagram Reels and TikTok, rather than just static images.

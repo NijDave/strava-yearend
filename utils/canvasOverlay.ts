@@ -2,7 +2,7 @@
 
 import { getOverlayStats } from "./formatActivityOverlay";
 
-export type OverlayVariant = "transparent" | "dark" | "neon" | "light";
+export type OverlayVariant = "transparent" | "dark" | "neon" | "light" | "stats-only";
 
 interface DrawOptions {
   width: number;
@@ -13,7 +13,7 @@ interface DrawOptions {
 export async function generateOverlayCanvas(
   activity: any,
   variant: OverlayVariant,
-  options: DrawOptions = { width: 390, height: 580, scale: 3 }
+  options: DrawOptions = { width: 390, height: 640, scale: 3 }
 ): Promise<HTMLCanvasElement> {
   const { width, height, scale } = options;
   
@@ -35,9 +35,9 @@ export async function generateOverlayCanvas(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
   
-  // 2. Clear / Background
-  if (variant === "transparent") {
-    ctx.clearRect(0, 0, width, height); // Pure alpha = 0
+  // 2. Background
+  if (variant === "transparent" || variant === "stats-only") {
+    ctx.clearRect(0, 0, width, height); // Fully transparent
   } else if (variant === "dark") {
     ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     ctx.fillRect(0, 0, width, height);
@@ -52,11 +52,9 @@ export async function generateOverlayCanvas(
   const textColor = variant === "light" ? "#000000" : "#FFFFFF";
   const centerX = width / 2;
 
-  // FIX 1 — REMOVED BADGE DRAWING BLOCK
-
-  // 4. Stats (FIX 3 — NEW Y-SPACING)
+  // 3. Stats — vertically centered in top portion
   const stats = getOverlayStats(activity);
-  let y = 130; // Start lower
+  let y = 130;
   
   stats.forEach(({ label, value }) => {
     // Label
@@ -67,7 +65,7 @@ export async function generateOverlayCanvas(
     (ctx as any).letterSpacing = "2px";
     ctx.fillText(label.toUpperCase(), centerX, y);
     
-    y += 8; // Small gap between label and value
+    y += 8;
     
     // Value
     ctx.globalAlpha = 1.0;
@@ -75,33 +73,35 @@ export async function generateOverlayCanvas(
     (ctx as any).letterSpacing = "0px";
     ctx.fillText(value, centerX, y + 50);
     
-    y += 110; // Large gap before next stat block
+    y += 110;
   });
 
-  // 5. Route Map (Async Drawing)
-  const polylineStr = activity.rawData?.map?.summary_polyline || activity.map?.summary_polyline;
-  if (polylineStr) {
-    await drawRoute(ctx, polylineStr, variant);
-  } else {
-    // ✕ cross for no-GPS
-    ctx.strokeStyle = "#FF5500";
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(centerX - 20, 420); ctx.lineTo(centerX + 20, 460);
-    ctx.moveTo(centerX + 20, 420); ctx.lineTo(centerX - 20, 460);
-    ctx.stroke();
+  // 4. Route Map — only on non-stats-only variants
+  if (variant !== "stats-only") {
+    const polylineStr = activity.rawData?.map?.summary_polyline || activity.map?.summary_polyline;
+    if (polylineStr) {
+      await drawRoute(ctx, polylineStr, variant);
+    } else {
+      // ✕ cross for no-GPS activities
+      ctx.strokeStyle = "#FF5500";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(centerX - 20, 470); ctx.lineTo(centerX + 20, 510);
+      ctx.moveTo(centerX + 20, 470); ctx.lineTo(centerX - 20, 510);
+      ctx.stroke();
+    }
   }
 
-  // 6. Branding
+  // 5. Branding — always at bottom, safely below map
   await new Promise<void>((resolve) => {
     const logoImg = new Image();
     logoImg.src = "/logo.png";
     logoImg.onload = () => {
-      ctx.globalAlpha = 0.8;
-      const targetHeight = 24;
+      ctx.globalAlpha = 0.85;
+      const targetHeight = 22;
       const targetWidth = (targetHeight / logoImg.height) * logoImg.width;
-      ctx.drawImage(logoImg, centerX - targetWidth / 2, 540, targetWidth, targetHeight);
+      ctx.drawImage(logoImg, centerX - targetWidth / 2, 608, targetWidth, targetHeight);
       ctx.globalAlpha = 1.0;
       resolve();
     };
@@ -111,7 +111,7 @@ export async function generateOverlayCanvas(
       ctx.font = '14px "Space Mono", monospace';
       (ctx as any).letterSpacing = "4px";
       ctx.textAlign = "center";
-      ctx.fillText("ATHLYTIC", centerX, 555);
+      ctx.fillText("ATHLYTIC", centerX, 618);
       ctx.globalAlpha = 1.0;
       resolve();
     };
@@ -121,7 +121,6 @@ export async function generateOverlayCanvas(
 }
 
 async function drawRoute(ctx: CanvasRenderingContext2D, polylineStr: string, variant: string) {
-  // Await the polyline library properly
   const polylineModule = await import("@mapbox/polyline") as any;
   const polyline = polylineModule.default || polylineModule;
   const coords = polyline.decode(polylineStr) as [number, number][];
@@ -132,7 +131,8 @@ async function drawRoute(ctx: CanvasRenderingContext2D, polylineStr: string, var
   const minLat = Math.min(...lats), maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
 
-  const boxX = 45, boxY = 360, boxW = 300, boxH = 160, pad = 20;
+  // Map box: starts at y=415, height=170 → ends at y=585 (well above logo at 608)
+  const boxX = 35, boxY = 415, boxW = 320, boxH = 170, pad = 18;
   const latRange = maxLat - minLat || 0.001;
   const lngRange = maxLng - minLng || 0.001;
   

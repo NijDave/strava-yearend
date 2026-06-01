@@ -1,3 +1,5 @@
+//secure data fetcher checks if the user logged in, there in db. 
+
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/db";
